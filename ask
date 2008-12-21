@@ -33,9 +33,15 @@ sub select_lines {
         # We hit EOF, so we're done getting input from the user.
         last if !defined($lines[-1]);
 
-        print $lines[$cursor];
+        tell_user($lines[$cursor]);
+        tell_user('> ');
 
         my $c = read_key();
+
+        # We always want to add a blank line before any more output, since our
+        # prompt didn't add a newline.
+        tell_user("\n");
+
         $c = '?' if !exists($command_table{$c});
         $command_table{$c}->();
     }
