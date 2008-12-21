@@ -17,6 +17,7 @@ sub select_lines {
     my @lines;
     my @selected; # is line N selected?
     my $done = 0;
+    my $counted = 0;
 
     my %command_table = (
         j => sub { ++$cursor },
@@ -25,7 +26,19 @@ sub select_lines {
         n => sub { $selected[$cursor] = 0; ++$cursor },
         d => sub { $done = 1 },
         q => sub { exit },
+        c => sub {
+            return if $counted;
+            push @lines, <>;
+            $counted = 1;
+        },
     );
+
+    my $prompt_user = sub {
+        tell_user($lines[$cursor]);
+
+        my $max = $counted ? @lines : '?';
+        tell_user("[$cursor/$max]> ");
+    };
 
     while (!$done) {
         # If the cursor is beyond the already-read lines, lazily read the next
@@ -35,8 +48,7 @@ sub select_lines {
         # We hit EOF, so we're done getting input from the user.
         last if !defined($lines[-1]);
 
-        tell_user($lines[$cursor]);
-        tell_user('> ');
+        $prompt_user->();
 
         my $c = read_key();
 
