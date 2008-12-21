@@ -4,6 +4,9 @@ use warnings;
 use autodie;
 use IO::Handle;
 
+# It's not very useful to have the user type in lines to then select...
+exit if -t *STDIN;
+
 # We need to talk to the user directly. stdin and stdout are what we're
 # filtering.
 open my $in,  '<', '/dev/tty';
