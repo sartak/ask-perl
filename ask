@@ -16,16 +16,18 @@ sub select_lines {
     my $cursor = 0;
     my @lines;
     my @selected; # is line N selected?
+    my $done = 0;
 
     my %command_table = (
         j => sub { ++$cursor },
         k => sub { --$cursor if $cursor > 0 },
         y => sub { $selected[$cursor] = 1; ++$cursor },
         n => sub { $selected[$cursor] = 0; ++$cursor },
+        d => sub { $done = 1 },
         q => sub { exit },
     );
 
-    while (1) {
+    while (!$done) {
         # If the cursor is beyond the already-read lines, lazily read the next
         # line.
         push @lines, scalar <> until @lines > $cursor;
