@@ -105,10 +105,10 @@ sub run_command {
     # Space uses the default.
     $c = default_command() if $c eq ' ';
 
-    return tell_user("Invalid response, try again!")
+    return tell_user("Invalid response, try again!\n")
         if !exists($command_table{$c});
 
-    return tell_user("That command is currently unavailable.")
+    return tell_user("That command is currently unavailable.\n")
         if exists($command_table{$c}{available_when})
         && !$command_table{$c}{available_when}->();
 
