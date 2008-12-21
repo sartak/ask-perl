@@ -46,10 +46,7 @@ while (!$done) {
     # Default command.
     my $default = $is_selected[$cursor] ? 'y' : 'n';
 
-    # Prompt the user.
-    tell_user($lines[$cursor]);
-    my $max = $counted ? @lines : '?';
-    tell_user("[$cursor/$max]> ");
+    prompt_user($default);
 
     # Get some input.
     my $c = read_key();
@@ -57,6 +54,9 @@ while (!$done) {
     # We always want to add a blank line before any more output, since our
     # prompt didn't add a newline.
     tell_user("\n");
+
+    # Space uses the default.
+    $c = $default if $c eq ' ';
 
     # Run the command (or on invalid commands, show some help)
     $c = '?' if !exists($command_table{$c});
@@ -82,5 +82,26 @@ sub read_key {
 
 sub tell_user {
     print { $out } @_;
+}
+
+sub prompt_user {
+    my $default = shift;
+
+    # current line
+    tell_user($lines[$cursor]);
+
+    tell_user("Shall I pass this line through? ");
+
+    my $max = $counted ? @lines : '?';
+    tell_user("($cursor/$max) ");
+
+    # Construct the list of available commands.
+    my $keys = join '',
+               map { $_ eq $default ? uc($default) : $_ }
+               sort
+               grep { $_ ne '?' } # Don't display help command
+               keys %command_table;
+
+    tell_user("[$keys]> ");
 }
 
