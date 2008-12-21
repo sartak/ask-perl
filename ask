@@ -37,6 +37,8 @@ $command_table{'?'} = sub {
 
 while (!$done) {
     my $c = get_input();
+    last if !defined($c);
+
     run_command($c);
 }
 
@@ -51,7 +53,7 @@ sub get_input {
     push @lines, scalar <> until @lines > $cursor;
 
     # We hit EOF, so we're done getting input from the user.
-    last if !defined($lines[-1]);
+    return if !defined($lines[-1]);
 
     prompt_user();
 
