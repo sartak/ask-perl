@@ -19,21 +19,52 @@ my $cursor = 0;
 my $done = 0;
 my $counted = 0;
 
-my %command_table = (
-    j => sub { ++$cursor },
-    k => sub { --$cursor if $cursor > 0 },
-    y => sub { $is_selected[$cursor] = 1; ++$cursor },
-    n => sub { $is_selected[$cursor] = 0; ++$cursor },
-    d => sub { $done = 1 },
-    q => sub { exit },
-    c => sub {
-        return if $counted;
+my %command_table;
+%command_table = (
+    j => {
+        command        => sub { ++$cursor },
+        documentation  => "skip to the next line",
+    },
+    k => {
+        command        => sub { --$cursor },
+        available_when => sub { $cursor > 0 },
+        documentation  => "back up to the previous line",
+    },
+    y => {
+        command        => sub { $is_selected[$cursor] = 1; ++$cursor },
+        documentation  => "pass this line through",
+    },
+    n => {
+        command        => sub { $is_selected[$cursor] = 0; ++$cursor },
+        documentation  => "don't pass this line through",
+    },
+    d => {
+        command        => sub { $done = 1 },
+        documentation  => "print selected lines, skipping all remaining lines",
+    },
+    q => {
+        command        => sub { exit },
+        documentation  => "cancel ask, passing no lines through",
+    },
+    c => {
+        command => sub {
+            # Force the rest of stdin, so we can get a count of how many lines
+            # need to be decided upon
+            push @lines, <>;
 
-        # Force the rest of stdin, so we can get a count of how many lines need
-        # to be decided upon
-        push @lines, <>;
-
-        $counted = 1;
+            $counted = 1;
+        },
+        available_when => sub { !$counted },
+        documentation  => "read the rest of input to count its size",
+    },
+    '?' => {
+        command => sub {
+            for my $key (sort keys %command_table) {
+                printf "%s: %s\n", $key, $command_table{$key}{documentation};
+            }
+            print "<Space>: accept the current default (which is capitalized)\n";
+        },
+        documentation => "show this help",
     },
 );
 
@@ -77,7 +108,11 @@ sub run_command {
     return tell_user("Invalid response, try again!")
         if !exists($command_table{$c});
 
-    $command_table{$c}->();
+    return tell_user("That command is currently unavailable.")
+        if exists($command_table{$c}{available_when})
+        && !$command_table{$c}{available_when}->();
+
+    $command_table{$c}{command}->();
 }
 
 sub read_key {
