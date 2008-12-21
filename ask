@@ -13,17 +13,17 @@ $out->autoflush(1);
 print(select_lines());
 
 sub select_lines {
-    my $cursor = 0;
     my @lines;
-    my @selected; # is line N selected?
+    my @is_selected;
+    my $cursor = 0;
     my $done = 0;
     my $counted = 0;
 
     my %command_table = (
         j => sub { ++$cursor },
         k => sub { --$cursor if $cursor > 0 },
-        y => sub { $selected[$cursor] = 1; ++$cursor },
-        n => sub { $selected[$cursor] = 0; ++$cursor },
+        y => sub { $is_selected[$cursor] = 1; ++$cursor },
+        n => sub { $is_selected[$cursor] = 0; ++$cursor },
         d => sub { $done = 1 },
         q => sub { exit },
         c => sub {
@@ -33,11 +33,9 @@ sub select_lines {
         },
     );
 
-    my $prompt_user = sub {
-        tell_user($lines[$cursor]);
-
-        my $max = $counted ? @lines : '?';
-        tell_user("[$cursor/$max]> ");
+    $command_table{'?'} = sub {
+        my $keys = join '', sort keys %command_table;
+        tell_user("Valid commands are: $keys\n");
     };
 
     while (!$done) {
@@ -48,24 +46,31 @@ sub select_lines {
         # We hit EOF, so we're done getting input from the user.
         last if !defined($lines[-1]);
 
-        $prompt_user->();
+        # Prompt the user.
+        tell_user($lines[$cursor]);
+        my $max = $counted ? @lines : '?';
+        tell_user("[$cursor/$max]> ");
 
+        # Get some input.
         my $c = read_key();
 
         # We always want to add a blank line before any more output, since our
         # prompt didn't add a newline.
         tell_user("\n");
 
+        # Run the command (or on invalid commands, show some help)
         $c = '?' if !exists($command_table{$c});
         $command_table{$c}->();
     }
 
+    # Return selected lines!
     return map { $lines[$_] }
-           grep { $selected[$_] }
+           grep { $is_selected[$_] }
            0 .. $#lines;
 }
 
 sub read_key {
+    # Term::ReadKey operates on STDIN.
     local *STDIN = $in;
 
     use Term::ReadKey;
