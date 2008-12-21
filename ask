@@ -44,7 +44,7 @@ while (!$done) {
     last if !defined($lines[-1]);
 
     # Default command.
-    my $default = $is_selected[$cursor] ? 'y' : 'n';
+    my $default = default_command();
 
     prompt_user($default);
 
@@ -104,4 +104,6 @@ sub prompt_user {
 
     tell_user("[$keys]> ");
 }
+
+sub default_command { $is_selected[$cursor] ? 'y' : 'n' }
 
