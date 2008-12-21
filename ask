@@ -28,15 +28,14 @@ my %command_table = (
     q => sub { exit },
     c => sub {
         return if $counted;
+
+        # Force the rest of stdin, so we can get a count of how many lines need
+        # to be decided upon
         push @lines, <>;
+
         $counted = 1;
     },
 );
-
-$command_table{'?'} = sub {
-    my $keys = join '', sort keys %command_table;
-    tell_user("Valid commands are: $keys\n");
-};
 
 while (!$done) {
     my $c = get_input();
@@ -75,8 +74,8 @@ sub run_command {
     # Space uses the default.
     $c = default_command() if $c eq ' ';
 
-    # On invalid commands, show some help.
-    $c = '?' if !exists($command_table{$c});
+    return tell_user("Invalid response, try again!")
+        if !exists($command_table{$c});
 
     $command_table{$c}->();
 }
