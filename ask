@@ -145,9 +145,23 @@ sub prompt_user {
 
     # Construct the list of available commands.
     my $keys = join '',
+
+               # Capitalize default command
                map { $_ eq $default ? uc($default) : $_ }
+
                sort
-               grep { $_ ne '?' } # Don't display help command
+
+               # Don't display help command
+               grep { $_ ne '?' }
+
+               # Hide unavailable commands
+               grep {
+                   exists($command_table{$_}{available_when})
+                   ? $command_table{$_}{available_when}->()
+                   : 1
+               }
+
+               # All commands
                keys %command_table;
 
     tell_user("[$keys]> ");
