@@ -36,6 +36,16 @@ $command_table{'?'} = sub {
 };
 
 while (!$done) {
+    my $c = get_input();
+    run_command($c);
+}
+
+# Print selected lines!
+print map { $lines[$_] }
+      grep { $is_selected[$_] }
+      0 .. $#lines;
+
+sub get_input {
     # If the cursor is beyond the already-read lines, lazily read the next
     # line.
     push @lines, scalar <> until @lines > $cursor;
@@ -43,30 +53,28 @@ while (!$done) {
     # We hit EOF, so we're done getting input from the user.
     last if !defined($lines[-1]);
 
-    # Default command.
-    my $default = default_command();
+    prompt_user();
 
-    prompt_user($default);
-
-    # Get some input.
     my $c = read_key();
 
     # We always want to add a blank line before any more output, since our
     # prompt didn't add a newline.
     tell_user("\n");
 
-    # Space uses the default.
-    $c = $default if $c eq ' ';
-
-    # Run the command (or on invalid commands, show some help)
-    $c = '?' if !exists($command_table{$c});
-    $command_table{$c}->();
+    return $c;
 }
 
-# Print selected lines!
-print map { $lines[$_] }
-      grep { $is_selected[$_] }
-      0 .. $#lines;
+sub run_command {
+    my $c = shift;
+
+    # Space uses the default.
+    $c = default_command() if $c eq ' ';
+
+    # On invalid commands, show some help.
+    $c = '?' if !exists($command_table{$c});
+
+    $command_table{$c}->();
+}
 
 sub read_key {
     # Term::ReadKey operates on STDIN.
@@ -85,8 +93,6 @@ sub tell_user {
 }
 
 sub prompt_user {
-    my $default = shift;
-
     # current line
     tell_user($lines[$cursor]);
 
@@ -94,6 +100,8 @@ sub prompt_user {
 
     my $max = $counted ? @lines : '?';
     tell_user("($cursor/$max) ");
+
+    my $default = default_command();
 
     # Construct the list of available commands.
     my $keys = join '',
