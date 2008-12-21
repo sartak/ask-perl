@@ -4,6 +4,8 @@ use warnings;
 use autodie;
 use IO::Handle;
 
+our $VERSION = '0.01';
+
 # It's not very useful to have the user type in lines to then select...
 exit if -t *STDIN;
 
@@ -168,4 +170,31 @@ sub prompt_user {
 }
 
 sub default_command { $is_selected[$cursor] ? 'y' : 'n' }
+
+__END__
+
+=head1 NAME
+
+ask - filters stdin by asking the user for each line
+
+=head1 DESCRIPTION
+
+C<ask> is a utility that filters stdin to stdout not by any automatic process,
+but by prompting the user about each line.
+
+=head1 AUTHOR
+
+Shawn M Moore, C<sartak at bestpractical dot com>
+
+=head1 PREREQUISITES
+
+autodie
+
+Term::ReadKey
+
+=pod SCRIPT CATEGORIES
+
+UNIX/System_administration
+
+=cut
 
