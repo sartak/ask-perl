@@ -102,8 +102,9 @@ sub prompt_user {
 
     tell_user("Shall I pass this line through? ");
 
-    my $max = $counted ? @lines : '?';
-    tell_user("($cursor/$max) ");
+    my $current = $cursor + 1; # start from 1 not 0
+    my $max     = $counted ? @lines : '?';
+    tell_user("($current/$max) ");
 
     my $default = default_command();
 
