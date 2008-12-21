@@ -10,64 +10,63 @@ open my $in,  '<', '/dev/tty';
 open my $out, '>', '/dev/tty';
 $out->autoflush(1);
 
-print(select_lines());
+my @lines;
+my @is_selected;
+my $cursor = 0;
+my $done = 0;
+my $counted = 0;
 
-sub select_lines {
-    my @lines;
-    my @is_selected;
-    my $cursor = 0;
-    my $done = 0;
-    my $counted = 0;
+my %command_table = (
+    j => sub { ++$cursor },
+    k => sub { --$cursor if $cursor > 0 },
+    y => sub { $is_selected[$cursor] = 1; ++$cursor },
+    n => sub { $is_selected[$cursor] = 0; ++$cursor },
+    d => sub { $done = 1 },
+    q => sub { exit },
+    c => sub {
+        return if $counted;
+        push @lines, <>;
+        $counted = 1;
+    },
+);
 
-    my %command_table = (
-        j => sub { ++$cursor },
-        k => sub { --$cursor if $cursor > 0 },
-        y => sub { $is_selected[$cursor] = 1; ++$cursor },
-        n => sub { $is_selected[$cursor] = 0; ++$cursor },
-        d => sub { $done = 1 },
-        q => sub { exit },
-        c => sub {
-            return if $counted;
-            push @lines, <>;
-            $counted = 1;
-        },
-    );
+$command_table{'?'} = sub {
+    my $keys = join '', sort keys %command_table;
+    tell_user("Valid commands are: $keys\n");
+};
 
-    $command_table{'?'} = sub {
-        my $keys = join '', sort keys %command_table;
-        tell_user("Valid commands are: $keys\n");
-    };
+while (!$done) {
+    # If the cursor is beyond the already-read lines, lazily read the next
+    # line.
+    push @lines, scalar <> until @lines > $cursor;
 
-    while (!$done) {
-        # If the cursor is beyond the already-read lines, lazily read the next
-        # line.
-        push @lines, scalar <> until @lines > $cursor;
+    # We hit EOF, so we're done getting input from the user.
+    last if !defined($lines[-1]);
 
-        # We hit EOF, so we're done getting input from the user.
-        last if !defined($lines[-1]);
+    # Default command.
+    my $default = $is_selected[$cursor] ? 'y' : 'n';
 
-        # Prompt the user.
-        tell_user($lines[$cursor]);
-        my $max = $counted ? @lines : '?';
-        tell_user("[$cursor/$max]> ");
+    # Prompt the user.
+    tell_user($lines[$cursor]);
+    my $max = $counted ? @lines : '?';
+    tell_user("[$cursor/$max]> ");
 
-        # Get some input.
-        my $c = read_key();
+    # Get some input.
+    my $c = read_key();
 
-        # We always want to add a blank line before any more output, since our
-        # prompt didn't add a newline.
-        tell_user("\n");
+    # We always want to add a blank line before any more output, since our
+    # prompt didn't add a newline.
+    tell_user("\n");
 
-        # Run the command (or on invalid commands, show some help)
-        $c = '?' if !exists($command_table{$c});
-        $command_table{$c}->();
-    }
-
-    # Return selected lines!
-    return map { $lines[$_] }
-           grep { $is_selected[$_] }
-           0 .. $#lines;
+    # Run the command (or on invalid commands, show some help)
+    $c = '?' if !exists($command_table{$c});
+    $command_table{$c}->();
 }
+
+# Print selected lines!
+print map { $lines[$_] }
+      grep { $is_selected[$_] }
+      0 .. $#lines;
 
 sub read_key {
     # Term::ReadKey operates on STDIN.
