@@ -1,0 +1,62 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use autodie;
+use IO::Handle;
+
+# We need to talk to the user directly. stdin and stdout are what we're
+# filtering.
+open my $in,  '<', '/dev/tty';
+open my $out, '>', '/dev/tty';
+$out->autoflush(1);
+
+print(select_lines());
+
+sub select_lines {
+    my $cursor = 0;
+    my @lines;
+    my @selected; # is line N selected?
+
+    my %command_table = (
+        j => sub { ++$cursor },
+        k => sub { --$cursor if $cursor > 0 },
+        y => sub { $selected[$cursor] = 1; ++$cursor },
+        n => sub { $selected[$cursor] = 0; ++$cursor },
+        q => sub { exit },
+    );
+
+    while (1) {
+        # If the cursor is beyond the already-read lines, lazily read the next
+        # line.
+        push @lines, scalar <> until @lines > $cursor;
+
+        # We hit EOF, so we're done getting input from the user.
+        last if !defined($lines[-1]);
+
+        print $lines[$cursor];
+
+        my $c = read_key();
+        $c = '?' if !exists($command_table{$c});
+        $command_table{$c}->();
+    }
+
+    return map { $lines[$_] }
+           grep { $selected[$_] }
+           0 .. $#lines;
+}
+
+sub read_key {
+    local *STDIN = $in;
+
+    use Term::ReadKey;
+    ReadMode(3); # Single-character input, without echo
+    my $c = ReadKey;
+    ReadMode(0); # Restore regular readline
+
+    return $c;
+}
+
+sub tell_user {
+    print { $out } @_;
+}
+
