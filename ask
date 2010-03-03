@@ -62,9 +62,9 @@ my %command_table;
     '?' => {
         command => sub {
             for my $key (sort keys %command_table) {
-                printf "%s: %s\n", $key, $command_table{$key}{documentation};
+                tell_user(sprintf "%s: %s\n", $key, $command_table{$key}{documentation});
             }
-            print "<Space>: accept the current default (which is capitalized)\n";
+            tell_user("<Space>: accept the current default (which is capitalized)\n");
         },
         documentation => "show this help",
     },
